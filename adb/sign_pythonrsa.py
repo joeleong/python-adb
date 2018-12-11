@@ -60,9 +60,9 @@ class PythonRSASigner(object):
 
     @classmethod
     def FromRSAKeyPath(cls, rsa_key_path):
-        with open(rsa_key_path + '.pub') as f:
+        with open(rsa_key_path + '.pub', 'rb') as f:
             pub = f.read()
-        with open(rsa_key_path) as f:
+        with open(rsa_key_path, 'rb') as f:
             priv = f.read()
         return cls(pub, priv)
 

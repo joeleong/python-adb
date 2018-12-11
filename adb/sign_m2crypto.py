@@ -21,7 +21,7 @@ class M2CryptoSigner(adb_protocol.AuthSigner):
     """AuthSigner using M2Crypto."""
 
     def __init__(self, rsa_key_path):
-        with open(rsa_key_path + '.pub') as rsa_pub_file:
+        with open(rsa_key_path + '.pub', 'rb') as rsa_pub_file:
             self.public_key = rsa_pub_file.read()
 
         self.rsa_key = RSA.load_key(rsa_key_path)
