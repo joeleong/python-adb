@@ -25,6 +25,7 @@ import time
 
 from adb import adb_commands
 from adb import common_cli
+from adb import android_pubkey
 
 try:
     from adb import sign_cryptography
@@ -149,6 +150,14 @@ def main():
     subparser.add_argument(
         '--output_port_path', action='store_true',
         help='Outputs the port_path alongside the serial')
+    subparser = subparsers.add_parser(
+        name='keygen', help='generate adb public/private key '
+        'private key stored in {filepath} '
+        'public key stored in {filepath}.pub '
+        '(existing files overwritten)')
+    subparser.add_argument(
+        'filepath',
+        help='File path to write the private/public keypair (existing files overwritten)')
 
     common_cli.MakeSubparser(
         subparsers, parents, adb_commands.AdbCommands.Install)
@@ -195,6 +204,8 @@ def main():
     if args.command_name == 'help':
         parser.print_help()
         return 0
+    if args.command_name == 'keygen':
+        return android_pubkey.keygen(args.filepath)
     if args.command_name == 'logcat':
         args.positional = args.options
     elif args.command_name == 'shell':

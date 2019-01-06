@@ -139,3 +139,19 @@ def write_public_keyfile(private_key_path, public_key_path):
     with open(public_key_path, 'wb') as public_key_file:
         public_key_file.write(base64.b64encode(public_key))
         public_key_file.write(get_user_info().encode())
+
+
+def keygen(filepath):
+    """generate adb public/private key
+    private key stored in {filepath}
+    public key stored in {filepath}.pub
+    (existing files overwritten)
+
+    Args:
+      filepath: File path to write the private/public keypair
+    """
+    key = Crypto.PublicKey.RSA.generate(2048)
+    with open(filepath, 'wb') as private_key_file:
+        private_key_file.write(key.export_key(format='PEM', pkcs=8))
+
+    write_public_keyfile(filepath, filepath + '.pub')
