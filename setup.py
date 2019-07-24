@@ -56,7 +56,6 @@ Android project's ADB.
     install_requires = [
         'libusb1>=1.0.16',
         'pycryptodome',
-        'six',
         rsa_signer_library
     ],
 
