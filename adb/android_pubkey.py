@@ -32,8 +32,9 @@ import base64
 import socket
 import struct
 
-import Crypto.Util
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 # Size of an RSA modulus such as an encrypted block or a signature.
@@ -88,7 +89,11 @@ def decode_pubkey_file(public_key_path):
 
 def encode_pubkey(private_key_path):
     """encodes a public RSA key into Android's custom binary format"""
-    key = Crypto.PublicKey.RSA.import_key(private_key_path)
+    with open(private_key_path, 'rb') as key_file:
+        key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+            backend=default_backend()).private_numbers().public_numbers
 
     # Compute and store n0inv = -1 / N[0] mod 2^32.
     # BN_set_bit(r32, 32)
@@ -96,7 +101,7 @@ def encode_pubkey(private_key_path):
     # BN_mod(n0inv, key->n, r32, ctx)
     n0inv = key.n % r32
     # BN_mod_inverse(n0inv, n0inv, r32, ctx)
-    n0inv = Crypto.Util.number.inverse(n0inv, r32)
+    n0inv = rsa._modinv(n0inv, r32)
     # BN_sub(n0inv, r32, n0inv)
     n0inv = r32 - n0inv
 
@@ -131,10 +136,8 @@ def get_user_info():
 def write_public_keyfile(private_key_path, public_key_path):
     """write public keyfile to public_key_path in Android's custom
     RSA public key format given a path to a private keyfile"""
-    with open(private_key_path, 'rb') as private_key_file:
-        private_key = private_key_file.read()
 
-    public_key = encode_pubkey(private_key)
+    public_key = encode_pubkey(private_key_path)
     assert len(public_key) == struct.calcsize(ANDROID_RSAPUBLICKEY_STRUCT)
     with open(public_key_path, 'wb') as public_key_file:
         public_key_file.write(base64.b64encode(public_key))
@@ -150,8 +153,14 @@ def keygen(filepath):
     Args:
       filepath: File path to write the private/public keypair
     """
-    key = Crypto.PublicKey.RSA.generate(2048)
+    private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend())
     with open(filepath, 'wb') as private_key_file:
-        private_key_file.write(key.export_key(format='PEM', pkcs=8))
+        private_key_file.write(private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()))
 
     write_public_keyfile(filepath, filepath + '.pub')
